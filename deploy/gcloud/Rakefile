@@ -24,7 +24,7 @@ end
 
 namespace :worker do
   task :deploy do
-    sh "docker service create --name worker --network lazycache --mount source=CamHD_motion_metadata,destination=/output/CamHD_motion_metadata amarburg/camhd_motion_analysis_rq_worker:latest"
+    sh "docker service create --name worker --constraint node.role!=manager --network lazycache --mount source=CamHD_motion_metadata,destination=/output/CamHD_motion_metadata amarburg/camhd_motion_analysis_rq_worker:latest"
   end
 end
 
