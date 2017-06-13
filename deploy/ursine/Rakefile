@@ -1,0 +1,75 @@
+
+
+
+namespace :network do
+  task :create do
+    sh "docker network create --attachable --driver=overlay lazycache"
+  end
+end
+
+
+namespace :volume do
+  task :create do
+    sh "docker volume create -d nfs --name CamHD_motion_metadata -o share=192.168.13.108:/auto/canine/aaron/camhd_analysis/CamHD_motion_metadata"
+  end
+end
+
+
+namespace :lazycache do
+  task :deploy do
+    sh "docker service create --name lazycache_nocache --network lazycache -p 8080 amarburg/lazycache_nocache_ursine:latest"
+  end
+end
+
+
+namespace :worker do
+  task :deploy do
+    sh "docker service create --env-file prod.env --name worker "\
+          "--constraint node.role!=manager --network lazycache "\
+          "--mount source=CamHD_motion_metadata,destination=/output/CamHD_motion_metadata "\
+          "amarburg/camhd_motion_analysis_rq_worker:latest --log INFO"
+  end
+end
+
+
+
+
+
+
+namespace :gcloud do
+
+  task :ssh do
+    sh "gcloud --project=camhd-motion-analysis-swarm compute ssh swarm-manager "
+  end
+
+  task :manager do
+    sh "docker-machine create swarm-manager -d google " \
+    " --google-machine-type g1-small "\
+    " --google-zone us-central1-a "\
+    " --google-tags swarm-cluster "\
+    " --google-project camhd-motion-analysis-swarm " \
+    " --swarm-master " \
+    " --metadata startup-script=\"
+    #! /bin/bash
+    sudo docker swarm init
+    \" "
+  end
+
+  task :template do
+    sh "gcloud compute instance-templates create swarm-template-n1-highcpu-8 \
+    --machine-type n1-highcpu-8 \
+    --preemptible \
+    --image-family coreos-stable \
+    --image-project coreos-cloud \
+    --boot-disk-size 10GB \
+    --metadata-from-file user-data=swarm-worker-cloud-init"
+  end
+
+  task :create do
+    sh "gcloud compute instance-groups managed create worker-swarm \
+    --template swarm-template-n1-highcpu-8 \
+    --base-instance-name swarm \
+    --size 3 \
+    --zone us-central1-a"
+  end
+end
