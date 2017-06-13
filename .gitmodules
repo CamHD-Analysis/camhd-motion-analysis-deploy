@@ -1,0 +1,3 @@
+[submodule "camhd_motion_analysis"]
+	path = camhd_motion_analysis
+	url = git@github.com:CamHD-Analysis/camhd_motion_analysis.git
