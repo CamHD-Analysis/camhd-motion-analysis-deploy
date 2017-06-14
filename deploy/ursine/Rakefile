@@ -10,7 +10,7 @@ end
 
 namespace :volume do
   task :create do
-    sh "docker volume create -d nfs --name CamHD_motion_metadata -o share=192.168.13.108:/auto/canine/aaron/camhd_analysis/CamHD_motion_metadata"
+    sh "docker volume create -d nfs --name CamHD_motion_metadata -o share=192.168.13.110:/mnt/zvol1/users/aaron/camhd_analysis/CamHD_motion_metadata -o vers=3"
   end
 end
 
