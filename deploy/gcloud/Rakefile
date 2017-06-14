@@ -8,13 +8,6 @@ namespace :network do
 end
 
 
-namespace :volume do
-  task :create do
-    sh "docker volume create -d nfs --name CamHD_motion_metadata -o share=swarm-manager:/home/amarburg/CamHD_motion_metadata"
-  end
-end
-
-
 namespace :lazycache do
   task :deploy do
     sh "docker service create --name lazycache_nocache --network lazycache -p 8080 amarburg/lazycache_nocache_ursine:latest"
@@ -26,7 +19,7 @@ namespace :worker do
   task :deploy do
     sh "docker service create --env-file prod.env --name worker "\
           "--constraint node.role!=manager --network lazycache "\
-          "--mount source=CamHD_motion_metadata,destination=/output/CamHD_motion_metadata "\
+          "--mount type=volume,volume-opt=o=addr=swarm-manager,volume-opt=device=:/home/amarburg/CamHD_motion_metadata,volume-opt=type=nfs,source=camhd_motion_metadata_by_nfs,target=/output/CamHD_motion_metadata,volume-nocopy " \
           "amarburg/camhd_motion_analysis_rq_worker:latest --log INFO"
   end
 end

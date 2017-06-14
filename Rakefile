@@ -83,12 +83,14 @@ end
         " --file Dockerfile_rq_prod ."
       end
     end
+
+     task :push do
+       sh "docker tag camhd_motion_analysis_rq_worker:latest amarburg/camhd_motion_analysis_rq_worker:latest"
+       sh "docker push amarburg/camhd_motion_analysis_rq_worker:latest"
+     end
+
 end
 
-#     task :push do
-#       sh "docker tag camhd_motion_analysis_rq_worker:latest amarburg/camhd_motion_analysis_rq_worker:latest"
-#       sh "docker push amarburg/camhd_motion_analysis_rq_worker:latest"
-#     end
 #
 #     task :launch do
 #       throw "Can't find prod.env" unless File.exists? "prod.env"
