@@ -68,27 +68,39 @@ end
 
 
 
-  namespace :prod do
-    task :base_image do
-      chdir "docker/" do
-        sh "docker build --tag camhd_motion_analysis_rq_worker_base:latest --tag camhd_motion_analysis_rq_worker_base:#{`git rev-parse --short HEAD`.chomp} --file Dockerfile_rq_base ."
-      end
+namespace :prod do
+  task :base_image do
+    chdir "docker/" do
+      sh "docker build --tag camhd_motion_analysis_rq_worker_base:latest --tag camhd_motion_analysis_rq_worker_base:#{`git rev-parse --short HEAD`.chomp} --file Dockerfile_rq_base ."
     end
+  end
 
-    task :build => "prod:base_image" do
-      chdir "docker/" do
-        sh "docker build --no-cache "\
-        " --tag camhd_motion_analysis_rq_worker:latest " \
-        " --tag camhd_motion_analysis_rq_worker:#{`git rev-parse --short HEAD`.chomp} "\
-        " --file Dockerfile_rq_prod ."
-      end
+  task :build => "prod:base_image" do
+    chdir "docker/" do
+      sh "docker build --no-cache "\
+      " --tag camhd_motion_analysis_rq_worker:latest " \
+      " --tag camhd_motion_analysis_rq_worker:#{`git rev-parse --short HEAD`.chomp} "\
+      " --file Dockerfile_rq_prod ."
     end
+  end
 
-     task :push do
-       sh "docker tag camhd_motion_analysis_rq_worker:latest amarburg/camhd_motion_analysis_rq_worker:latest"
-       sh "docker push amarburg/camhd_motion_analysis_rq_worker:latest"
-     end
+  task :push do
+    sh "docker tag camhd_motion_analysis_rq_worker:latest amarburg/camhd_motion_analysis_rq_worker:latest"
+    sh "docker push amarburg/camhd_motion_analysis_rq_worker:latest"
+  end
 
+  task :inject do
+    Dotenv.load('prod.env')
+    sh "docker run --rm --env-file ./prod.env "\
+    " --entrypoint python3 "\
+    " --network lazycache" \
+    " amarburg/camhd_motion_analysis_rq_worker:latest"\
+    " /code/camhd_motion_analysis/python/rq_client.py " \
+    " --threads 16 " \
+    " --lazycache-url http://lazycache_nocache:8080/v1/org/oceanobservatories/rawdata/files/" \
+    " --output-dir /output/CamHD_motion_metadata"\
+    " /RS03ASHS/PN03B/06-CAMHDA301/2016/01/01/"
+  end
 end
 
 #
