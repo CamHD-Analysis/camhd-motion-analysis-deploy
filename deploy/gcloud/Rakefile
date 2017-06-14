@@ -49,19 +49,19 @@ namespace :gcloud do
   end
 
   task :template do
-    sh "gcloud compute instance-templates create swarm-template-n1-highcpu-8 \
+    sh "gcloud compute instance-templates create swarm-coreos-alpha-n1-highcpu-8 \
     --machine-type n1-highcpu-8 \
     --preemptible \
-    --image-family coreos-stable \
+    --image-family coreos-alpha \
     --image-project coreos-cloud \
     --boot-disk-size 10GB \
     --metadata-from-file user-data=swarm-worker-cloud-init"
   end
 
   task :create do
-    sh "gcloud compute instance-groups managed create worker-swarm \
-    --template swarm-template-n1-highcpu-8 \
-    --base-instance-name swarm \
+    sh "gcloud compute instance-groups managed create worker-alpha-swarm \
+    --template swarm-coreos-alpha-n1-highcpu-8 \
+    --base-instance-name swarm-alpha \
     --size 3 \
     --zone us-central1-a"
   end
