@@ -28,5 +28,6 @@ RUN ldconfig
 #RUN dpkg --remove libopencv-dev g++ cmake
 #RUN apt-get autoremove --yes
 
+VOLUME /output/CamHD_motion_metadata
 
 ENTRYPOINT ["/code/camhd_motion_analysis/python/rq_worker.py"]

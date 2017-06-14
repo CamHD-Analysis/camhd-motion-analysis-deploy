@@ -17,4 +17,5 @@ WORKDIR docker-Release
 RUN make install
 RUN ldconfig   ## Weird that I need to run this...
 
+VOLUME /output/CamHD_motion_metadata
 ENTRYPOINT ["/code/camhd_motion_analysis/python/rq_worker.py"]
