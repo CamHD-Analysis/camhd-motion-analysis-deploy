@@ -78,9 +78,9 @@ namespace :prod do
   task :build => "prod:base_image" do
     chdir "docker/" do
       sh "docker build --no-cache "\
-      " --tag camhd_motion_analysis_rq_worker:latest " \
-      " --tag camhd_motion_analysis_rq_worker:#{`git rev-parse --short HEAD`.chomp} "\
-      " --file Dockerfile_rq_prod ."
+            " --tag camhd_motion_analysis_rq_worker:latest " \
+            " --tag camhd_motion_analysis_rq_worker:#{`git rev-parse --short HEAD`.chomp} "\
+            " --file Dockerfile_rq_prod ."
     end
   end
 
@@ -92,14 +92,14 @@ namespace :prod do
   task :inject do
     Dotenv.load('prod.env')
     sh "docker run --rm --env-file ./prod.env "\
-    " --entrypoint python3 "\
-    " --network lazycache" \
-    " amarburg/camhd_motion_analysis_rq_worker:latest"\
-    " /code/camhd_motion_analysis/python/rq_client.py " \
-    " --threads 16 " \
-    " --lazycache-url http://lazycache_nocache:8080/v1/org/oceanobservatories/rawdata/files/" \
-    " --output-dir /output/CamHD_motion_metadata"\
-    " /RS03ASHS/PN03B/06-CAMHDA301/2016/01/01/"
+            " --entrypoint python3 "\
+            " --network lazycache" \
+            " amarburg/camhd_motion_analysis_rq_worker:latest"\
+            " /code/camhd_motion_analysis/python/rq_client.py " \
+            " --threads 16 " \
+            " --lazycache-url http://lazycache_nocache:8080/v1/org/oceanobservatories/rawdata/files/" \
+            " --output-dir /output/CamHD_motion_metadata"\
+            " /RS03ASHS/PN03B/06-CAMHDA301/2016/01/01/"
   end
 end
 
