@@ -22,7 +22,6 @@ namespace :worker do
 end
 
 
-
 ## Tasks for setting up the swarm
 namespace :gcloud do
 
@@ -31,7 +30,7 @@ namespace :gcloud do
   end
 
   task :manager do
-    sh "docker-machine create swarm-manager -d google " \
+    sh "docker-machine --project=camhd-motion-analysis-swarm create swarm-manager -d google " \
                 " --google-machine-type g1-small "\
                 " --google-zone us-central1-a "\
                 " --google-tags swarm-cluster "\
@@ -49,7 +48,7 @@ namespace :gcloud do
   namespace :swarm do
 
     task :template do
-      sh "gcloud compute instance-templates create #{instance_fullname} \
+      sh "gcloud --project=camhd-motion-analysis-swarm compute instance-templates create #{instance_fullname} \
                   --machine-type n1-highcpu-8 \
                   --preemptible \
                   --image-family coreos-alpha \
@@ -59,7 +58,7 @@ namespace :gcloud do
     end
 
     task :deploy do
-      sh "gcloud compute instance-groups managed create worker-alpha-swarm \
+      sh "gcloud --project=camhd-motion-analysis-swarm compute instance-groups managed create worker-alpha-swarm \
                   --template #{instance_fullname} \
                   --base-instance-name #{instance_name} \
                   --size 1 \
