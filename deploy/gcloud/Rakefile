@@ -1,19 +1,16 @@
 
-
-
+## Tasks to be run _on the swarm manager_
 namespace :network do
   task :create do
     sh "docker network create --attachable --driver=overlay lazycache"
   end
 end
 
-
 namespace :lazycache do
   task :deploy do
     sh "docker service create --name lazycache_nocache --network lazycache -p 8080 amarburg/lazycache_nocache_ursine:latest"
   end
 end
-
 
 namespace :worker do
   task :deploy do
@@ -26,9 +23,7 @@ end
 
 
 
-
-
-
+## Tasks for setting up the swarm
 namespace :gcloud do
 
   task :ssh do
@@ -37,32 +32,40 @@ namespace :gcloud do
 
   task :manager do
     sh "docker-machine create swarm-manager -d google " \
-    " --google-machine-type g1-small "\
-    " --google-zone us-central1-a "\
-    " --google-tags swarm-cluster "\
-    " --google-project camhd-motion-analysis-swarm " \
-    " --swarm-master " \
-    " --metadata startup-script=\"
-    #! /bin/bash
-    sudo docker swarm init
-    \" "
+                " --google-machine-type g1-small "\
+                " --google-zone us-central1-a "\
+                " --google-tags swarm-cluster "\
+                " --google-project camhd-motion-analysis-swarm " \
+                " --swarm-master " \
+                " --google-tags redis-tcp-6379" \
+                " --metadata-from-file startup-script=swarm-manager-startup-script.sh"
   end
 
-  task :template do
-    sh "gcloud compute instance-templates create swarm-coreos-alpha-n1-highcpu-8 \
-    --machine-type n1-highcpu-8 \
-    --preemptible \
-    --image-family coreos-alpha \
-    --image-project coreos-cloud \
-    --boot-disk-size 10GB \
-    --metadata-from-file user-data=swarm-worker-cloud-init"
+  instance_version = "rev0"
+  instance_name   = "swarm-coreos-alpha-n1-highcpu-8"
+  instance_fullname = [instance_name, instance_version].join('-')
+
+
+  namespace :swarm do
+
+    task :template do
+      sh "gcloud compute instance-templates create #{instance_fullname} \
+                  --machine-type n1-highcpu-8 \
+                  --preemptible \
+                  --image-family coreos-alpha \
+                  --image-project coreos-cloud \
+                  --boot-disk-size 10GB \
+                  --metadata-from-file user-data=swarm-worker-cloud-init"
+    end
+
+    task :deploy do
+      sh "gcloud compute instance-groups managed create worker-alpha-swarm \
+                  --template #{instance_fullname} \
+                  --base-instance-name #{instance_name} \
+                  --size 1 \
+                  --zone us-central1-a"
+    end
+
   end
 
-  task :create do
-    sh "gcloud compute instance-groups managed create worker-alpha-swarm \
-    --template swarm-coreos-alpha-n1-highcpu-8 \
-    --base-instance-name swarm-alpha \
-    --size 3 \
-    --zone us-central1-a"
-  end
 end
