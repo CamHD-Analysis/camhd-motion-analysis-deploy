@@ -20,14 +20,14 @@ namespace :test do
     Dotenv.load('test.env')
     sh "git submodule update --init --recursive camhd_motion_analysis"
     sh "docker build --tag camhd_motion_analysis_rq_worker:test " \
-    "--file docker/Dockerfile_rq_test ."
+                "--file docker/Dockerfile_rq_test ."
   end
 
   task :launch do
     sh "docker run --rm "\
-    "--env-file test.env"
-    "--volume /home/aaron/canine/camhd_analysis/CamHD_motion_metadata:/output/CamHD_motion_metadata"\
-    " camhd_motion_analysis_rq_worker:test  --log INFO"
+            "--env-file test.env " \
+            "--volume /home/aaron/canine/camhd_analysis/CamHD_motion_metadata:/output/CamHD_motion_metadata"\
+            " camhd_motion_analysis_rq_worker:test  --log INFO"
   end
 
   task :inject do
