@@ -42,7 +42,7 @@ namespace :test do
             " --threads 16 " \
             " --lazycache-url http://lazycache_nocache:8080/v1/org/oceanobservatories/rawdata/files" \
             " --output-dir /output/CamHD_motion_metadata"\
-            " /RS03ASHS/PN03B/06-CAMHDA301/2016/01/01/"
+            " /RS03ASHS/PN03B/06-CAMHDA301/2016/02/01/"
   end
 
   namespace :swarm do
@@ -93,6 +93,10 @@ namespace :prod do
     end
   end
 
+  task :push do
+    sh "docker push amarburg/camhd_motion_analysis_rq_worker:latest"
+  end
+
    task :run do
      Dotenv.load('test.env')
      sh "docker run --rm --env-file test.env "\
@@ -112,7 +116,7 @@ namespace :prod do
             " --threads 16 " \
             " --lazycache-url http://lazycache_nocache:8080/v1/org/oceanobservatories/rawdata/files" \
             " --output-dir /output/CamHD_motion_metadata"\
-            " /RS03ASHS/PN03B/06-CAMHDA301/2016/01/01/"
+            " /RS03ASHS/PN03B/06-CAMHDA301/2016/02/01/"
   end
 end
 
