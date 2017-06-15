@@ -7,4 +7,4 @@ if [ ! -f $OUTPUT_DIR/README.md ]; then
   exit
 fi
 
-/code/camhd_motion_analysis/python/rq_worker.py
+/code/camhd_motion_analysis/python/rq_worker.py "$@"
