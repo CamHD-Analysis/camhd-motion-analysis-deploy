@@ -1,12 +1,22 @@
 
+## Todo.
+# Change Docker entyrpoint to script which (optionally) checks for destinations
+# TODO. Check for existence of files in injector
+
 require 'bundler'
 require 'dotenv'
 
 
+task :base_image do
+  chdir "docker/" do
+    sh "docker build --tag camhd_motion_analysis_rq_worker_base:latest --tag camhd_motion_analysis_rq_worker_base:#{`git rev-parse --short HEAD`.chomp} --file Dockerfile_rq_base ."
+  end
+end
+
 namespace :test do
 
   ## Test image needs to be build in current directory to access the camhd_motion_analysis submodule
-  task :build do
+  task :build => :base_image do
     Dotenv.load('test.env')
     sh "git submodule update --init --recursive camhd_motion_analysis"
     sh "docker build --tag camhd_motion_analysis_rq_worker:test " \
@@ -14,7 +24,7 @@ namespace :test do
   end
 
   task :launch do
-    sh "docker run "\
+    sh "docker run --rm "\
     "--env-file test.env"
     "--volume /home/aaron/canine/camhd_analysis/CamHD_motion_metadata:/output/CamHD_motion_metadata"\
     " camhd_motion_analysis_rq_worker:test  --log INFO"
@@ -69,13 +79,8 @@ end
 
 
 namespace :prod do
-  task :base_image do
-    chdir "docker/" do
-      sh "docker build --tag camhd_motion_analysis_rq_worker_base:latest --tag camhd_motion_analysis_rq_worker_base:#{`git rev-parse --short HEAD`.chomp} --file Dockerfile_rq_base ."
-    end
-  end
 
-  task :build => "prod:base_image" do
+  task :build => :base_image do
     chdir "docker/" do
       sh "docker build --no-cache "\
             " --tag camhd_motion_analysis_rq_worker:latest " \
