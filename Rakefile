@@ -98,11 +98,11 @@ namespace :prod do
   end
 
    task :run do
-     Dotenv.load('test.env')
-     sh "docker run --rm --env-file test.env "\
+     Dotenv.load('deploy/desktop_cluster/prod.env')
+     sh "docker run --rm --env-file deploy/desktop_cluster/prod.env "\
             " --network lazycache" \
-            " --volume camhd_motion_metadata_by_nfs:/output/CamHD_motion_metadata camhd_motion_analysis_rq_worker:latest" \
-            " amarburg/camhd_motion_analysis_rq_worker:latest"
+            " --volume camhd_motion_metadata_by_nfs:/output/CamHD_motion_metadata "\
+            " amarburg/camhd_motion_analysis_rq_worker:latest --log INFO"
    end
 
   task :inject do
