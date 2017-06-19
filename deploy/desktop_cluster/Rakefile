@@ -11,7 +11,17 @@ end
 
 
 namespace :lazycache do
-  task :deploy do
+
+  task :build do
+    sh "docker build --no-cache  --tag lazycache_nocache_ursine:latest lazycache/ "
+  end
+
+  task :push do
+    sh "docker tag lazycache_nocache_ursine:latest amarburg/lazycache_nocache_ursine:latest"
+    sh "docker push amarburg/lazycache_nocache_ursine:latest"
+  end
+
+  task :deploy => :push do
     sh "docker service create --name lazycache_nocache --network lazycache -p 8080 amarburg/lazycache_nocache_ursine:latest"
   end
 end
@@ -39,5 +49,5 @@ task :inject do
           " --log INFO " \
           " --lazycache-url http://lazycache_nocache:8080/v1/org/oceanobservatories/rawdata/files" \
           " --output-dir /output/CamHD_motion_metadata"\
-          " /RS03ASHS/PN03B/06-CAMHDA301/2016/02/"
+          " /RS03ASHS/PN03B/06-CAMHDA301/2016/03/"
 end

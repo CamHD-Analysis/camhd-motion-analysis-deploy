@@ -30,6 +30,15 @@ namespace :test do
             " camhd_motion_analysis_rq_worker:test  --log INFO"
   end
 
+
+  task :run_prod_env do
+    Dotenv.load('deploy/desktop_cluster/prod.env')
+    sh "docker run --rm --env-file deploy/desktop_cluster/prod.env "\
+           " --network lazycache" \
+           " --volume camhd_motion_metadata_by_nfs:/output/CamHD_motion_metadata "\
+           " camhd_motion_analysis_rq_worker:test --log INFO"
+  end
+
   task :inject do
     Dotenv.load('test.env')
     sh "docker run --rm --env-file test.env "\
