@@ -2,7 +2,7 @@
 FROM camhd_motion_analysis_rq_worker_base:latest
 MAINTAINER Aaron Marburg <amarburg@apl.washington.edu>
 
-ADD camhd_motion_analysis /code/camhd_motion_analysis
+ADD $CAMHD_PATH /code/camhd_motion_analysis
 WORKDIR /code/camhd_motion_analysis
 
 ## Initial conan configuration

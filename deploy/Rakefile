@@ -1,0 +1,126 @@
+
+require 'bundler'
+require 'dotenv'
+
+
+network_name = "lazycache"
+
+namespace :network do
+  task :create do
+    sh "docker network create --attachable --driver=overlay #{network_name}"
+  end
+end
+
+
+namespace :lazycache do
+
+  lazycache_tag = "amarburg/lazycache_prod:latest"
+  lazycache_repo = "#{ENV['GOPATH']}/src/github.com/amarburg/go-lazycache/deploy/docker/"
+
+  task :build do
+    chdir( lazycache_repo ) do
+      sh "docker build --no-cache  --tag #{lazycache_tag}  --file #{lazycache_repo}/Dockerfile ."
+    end
+  end
+
+  task :push do
+    sh "docker push #{lazycache_tag}"
+  end
+
+  task :deploy => :push do
+    sh "docker service create --name lazycache --network #{network_name} -p 8080 #{lazycache_tag}"
+  end
+end
+
+
+namespace :gcloud do
+
+  namespace :worker do
+    task :deploy do
+      sh "docker service create --env-file prod.env --name worker "\
+      "--constraint node.role!=manager --network #{network_name} "\
+      "--mount type=volume,volume-opt=o=addr=swarm-manager,volume-opt=device=:/home/amarburg/CamHD_motion_metadata,volume-opt=type=nfs,source=camhd_motion_metadata_by_nfs,target=/output/CamHD_motion_metadata,volume-nocopy " \
+      "amarburg/camhd_motion_analysis_rq_worker:latest --log INFO"
+    end
+  end
+
+
+  ## Tasks for setting up the swarm
+  namespace :swarm do
+
+    task :ssh do
+      sh "gcloud --project=camhd-motion-analysis-swarm compute ssh swarm-manager "
+    end
+
+    task :manager do
+      sh "docker-machine --project=camhd-motion-analysis-swarm create swarm-manager -d google " \
+      " --google-machine-type g1-small "\
+      " --google-zone us-central1-a "\
+      " --google-tags swarm-cluster "\
+      " --google-project camhd-motion-analysis-swarm " \
+      " --swarm-master " \
+      " --google-tags redis-tcp-6379" \
+      " --metadata-from-file startup-script=gcloud/swarm-manager-startup-script.sh"
+    end
+
+    instance_version = "rev0"
+    instance_name   = "swarm-coreos-alpha-n1-highcpu-8"
+    instance_fullname = [instance_name, instance_version].join('-')
+
+
+    namespace :swarm do
+
+      task :template do
+        sh "gcloud --project=camhd-motion-analysis-swarm compute instance-templates create #{instance_fullname} \
+        --machine-type n1-highcpu-8 \
+        --preemptible \
+        --image-family coreos-alpha \
+        --image-project coreos-cloud \
+        --boot-disk-size 10GB \
+        --metadata-from-file user-data=gcloud/swarm-worker-cloud-init"
+      end
+
+      task :deploy do
+        sh "gcloud --project=camhd-motion-analysis-swarm compute instance-groups managed create worker-alpha-swarm \
+        --template #{instance_fullname} \
+        --base-instance-name #{instance_name} \
+        --size 1 \
+        --zone us-central1-a"
+      end
+
+    end
+
+  end
+
+
+end
+
+
+namespace :desktop do
+
+  namespace :worker do
+    task :deploy do
+      sh "docker service create --env-file prod.env --name worker "\
+      "--network #{network_name} "\
+      "--mount type=volume,volume-opt=o=addr=192.168.13.110,volume-opt=device=:/mnt/zvol1/users/aaron/camhd_analysis/CamHD_motion_metadata/,volume-opt=type=nfs,source=camhd_motion_metadata_by_nfs,target=/output/CamHD_motion_metadata,volume-nocopy " \
+      "amarburg/camhd_motion_analysis_rq_worker:latest --log INFO"
+    end
+  end
+
+end
+
+
+task :inject do
+  Dotenv.load('prod.env')
+  sh "docker run --rm --env-file prod.env "\
+  " --entrypoint python3 "\
+  " --network #{network_name}" \
+  " --volume camhd_motion_metadata_by_nfs:/output/CamHD_motion_metadata" \
+  " amarburg/camhd_motion_analysis_rq_worker:latest"\
+  " /code/camhd_motion_analysis/python/rq_client.py " \
+  " --threads 16 " \
+  " --log INFO " \
+  " --lazycache-url http://lazycache_nocache:8080/v1/org/oceanobservatories/rawdata/files" \
+  " --output-dir /output/CamHD_motion_metadata"\
+  " /RS03ASHS/PN03B/06-CAMHDA301/2016/03/"
+end

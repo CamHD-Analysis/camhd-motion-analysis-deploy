@@ -8,19 +8,26 @@ require 'dotenv'
 
 
 task :base_image do
-  chdir "docker/" do
-    sh "docker build --tag camhd_motion_analysis_rq_worker_base:latest --tag camhd_motion_analysis_rq_worker_base:#{`git rev-parse --short HEAD`.chomp} --file Dockerfile_rq_base ."
-  end
+  sh "docker build --tag camhd_motion_analysis_rq_worker_base:latest --tag camhd_motion_analysis_rq_worker_base:#{`git rev-parse --short HEAD`.chomp} --file Dockerfile_rq_base ."
 end
 
+
+## Test image uses an existing codebase on this computer
 namespace :test do
 
-  ## Test image needs to be build in current directory to access the camhd_motion_analysis submodule
+  camhd_path = Pathname.new("../../camhd_motion_analysis")
+
+  ## Test image needs to be built in current directory to access the camhd_motion_analysis submodule
   task :build => :base_image do
-    Dotenv.load('test.env')
-    #sh "git submodule update --init --recursive camhd_motion_analysis"
-    sh "docker build --tag camhd_motion_analysis_rq_worker:test " \
-                "--file docker/Dockerfile_rq_test ."
+    chdir camhd_path.parent {
+      docker_path = Pathnamew.new("Dockerfile_rq_test").relative_path_from( camhd_path.parent )
+
+      Dotenv.load('test.env')
+      #sh "git submodule update --init --recursive camhd_motion_analysis"
+      sh "docker build --build-arg CAMHD_PATH=#{camhd_path} "\
+                "--tag camhd_motion_analysis_rq_worker:test " \
+                  "--file #{docker_path} "
+    }
   end
 
   task :run do
@@ -54,52 +61,20 @@ namespace :test do
             " /RS03ASHS/PN03B/06-CAMHDA301/2016/02/01/"
   end
 
-  namespace :swarm do
-
-    task :push do
-      sh "docker tag camhd_motion_analysis_rq_worker:test 127.0.0.1:5000/camhd_motion_analysis_rq_worker:test"
-      sh "docker push 127.0.0.1:5000/camhd_motion_analysis_rq_worker:test"
-    end
-
-    task :launch do
-      sh "docker service create" \
-      " --name test_worker" \
-      " --network lazycache_nocache_default" \
-      " --mount type=bind,source=/auto/canine/aaron/camhd_analysis/CamHD_motion_metadata,destination=/output/CamHD_motion_metadata "\
-      " 127.0.0.1:5000/camhd_motion_analysis_rq_worker:test"\
-      " --redis-url #{redis_url} --log INFO"
-    end
-
-    task :update do
-      sh "docker service update --force test_worker"
-    end
-
-    task :inject do
-      chdir "python" do
-        sh "python3 ./rq_client.py --redis-url #{redis_url} " \
-        " --threads 16 " \
-        " --lazycache-url http://lazycache_nocache:8080/v1/org/oceanobservatories/rawdata/files/" \
-        " --output-dir /output/CamHD_motion_metadata /RS03ASHS/PN03B/06-CAMHDA301/2016/01/01/CAMHDA301-20160101T090000Z.mov"
-      end
-    end
-  end
-
-
 end
 
 
 
 
+## Production images build pristine copy from github
 namespace :prod do
 
   task :build => :base_image do
-    chdir "docker/" do
       sh "docker build --no-cache "\
             " --tag camhd_motion_analysis_rq_worker:latest " \
             " --tag camhd_motion_analysis_rq_worker:#{`git rev-parse --short HEAD`.chomp} "\
             " --tag amarburg/camhd_motion_analysis_rq_worker:latest" \
             " --file Dockerfile_rq_prod ."
-    end
   end
 
   task :push do
