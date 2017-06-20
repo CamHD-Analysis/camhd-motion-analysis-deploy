@@ -68,8 +68,6 @@ namespace :gcloud do
     instance_fullname = [instance_name, instance_version].join('-')
 
 
-    namespace :swarm do
-
       task :template do
         sh "gcloud --project=camhd-motion-analysis-swarm compute instance-templates create #{instance_fullname} \
         --machine-type n1-highcpu-8 \
@@ -80,15 +78,13 @@ namespace :gcloud do
         --metadata-from-file user-data=gcloud/swarm-worker-cloud-init"
       end
 
-      task :deploy do
+      task :start do
         sh "gcloud --project=camhd-motion-analysis-swarm compute instance-groups managed create worker-alpha-swarm \
         --template #{instance_fullname} \
         --base-instance-name #{instance_name} \
         --size 1 \
         --zone us-central1-a"
       end
-
-    end
 
   end
 
@@ -110,6 +106,11 @@ namespace :desktop do
 end
 
 
+
+
+
+inject_path = ENV["INJECT_PATH"] || " /RS03ASHS/PN03B/06-CAMHDA301/2016/03/"
+
 task :inject do
   Dotenv.load('prod.env')
   sh "docker run --rm --env-file prod.env "\
@@ -122,5 +123,5 @@ task :inject do
   " --log INFO " \
   " --lazycache-url http://lazycache_nocache:8080/v1/org/oceanobservatories/rawdata/files" \
   " --output-dir /output/CamHD_motion_metadata"\
-  " /RS03ASHS/PN03B/06-CAMHDA301/2016/03/"
+  " #{inject_path}"
 end
