@@ -11,10 +11,10 @@ namespace :network do
   end
 end
 
+lazycache_tag = "amarburg/lazycache_prod:latest"
 
 namespace :lazycache do
 
-  lazycache_tag = "amarburg/lazycache_prod:latest"
   lazycache_repo = "#{ENV['GOPATH']}/src/github.com/amarburg/go-lazycache/deploy/docker/"
 
   task :build do
@@ -27,14 +27,14 @@ namespace :lazycache do
     sh "docker push #{lazycache_tag}"
   end
 
-  task :deploy => :push do
-    sh "docker service create --name lazycache --network #{network_name} -p 8080 #{lazycache_tag}"
-  end
 end
 
 
 namespace :gcloud do
 
+  task :lazycache => :push do
+    sh "docker service create --name lazycache --network #{network_name} -p 8080 --constraint node.role!=manager #{lazycache_tag}"
+  end
   namespace :worker do
     task :deploy do
       sh "docker service create --env-file prod.env --name worker "\
@@ -93,6 +93,10 @@ end
 
 
 namespace :desktop do
+
+  task :lazycache do
+    sh "docker service create --name lazycache --network #{network_name} -p 8080 #{lazycache_tag}"
+  end
 
   namespace :worker do
     task :deploy do
