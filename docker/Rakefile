@@ -11,6 +11,12 @@ task :base_image do
   sh "docker build --tag camhd_motion_analysis_rq_worker_base:latest --tag camhd_motion_analysis_rq_worker_base:#{`git rev-parse --short HEAD`.chomp} --file Dockerfile_rq_base ."
 end
 
+namespace :base_image do
+  task :force do
+    sh "docker build --no-cache --tag camhd_motion_analysis_rq_worker_base:latest --tag camhd_motion_analysis_rq_worker_base:#{`git rev-parse --short HEAD`.chomp} --file Dockerfile_rq_base ."  
+  end
+end
+
 
 ## Test image uses an existing codebase on this computer
 namespace :test do

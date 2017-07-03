@@ -4,6 +4,7 @@ require 'dotenv'
 
 
 network_name = "lazycache"
+lazycache_name = "lazycache"
 
 namespace :network do
   task :create do
@@ -32,12 +33,17 @@ end
 
 namespace :gcloud do
 
-  task :lazycache => :push do
+  task :redis do
+    sh "docker run  --detach --env-file gcloud/prod.env -p 6379:6379 --name redis -v /home/amarburg/bitnami:/bitnami bitnami/redis:latest"
+  end
+
+  task :lazycache do
     sh "docker service create --name lazycache --network #{network_name} -p 8080 --constraint node.role!=manager #{lazycache_tag}"
   end
+
   namespace :worker do
     task :deploy do
-      sh "docker service create --env-file prod.env --name worker "\
+      sh "docker service create --env-file gcloud/prod.env --name worker "\
       "--constraint node.role!=manager --network #{network_name} "\
       "--mount type=volume,volume-opt=o=addr=swarm-manager,volume-opt=device=:/home/amarburg/CamHD_motion_metadata,volume-opt=type=nfs,source=camhd_motion_metadata_by_nfs,target=/output/CamHD_motion_metadata,volume-nocopy " \
       "amarburg/camhd_motion_analysis_rq_worker:latest --log INFO"
@@ -62,6 +68,7 @@ namespace :gcloud do
       " --google-tags redis-tcp-6379" \
       " --metadata-from-file startup-script=gcloud/swarm-manager-startup-script.sh"
     end
+
 
     instance_version = "rev0"
     instance_name   = "swarm-coreos-alpha-n1-highcpu-8"
@@ -125,7 +132,7 @@ task :inject do
   " /code/camhd_motion_analysis/python/rq_client.py " \
   " --threads 16 " \
   " --log INFO " \
-  " --lazycache-url http://lazycache_nocache:8080/v1/org/oceanobservatories/rawdata/files" \
+  " --lazycache-url http://#{lazycache_name}:8080/v1/org/oceanobservatories/rawdata/files" \
   " --output-dir /output/CamHD_motion_metadata"\
   " #{inject_path}"
 end
