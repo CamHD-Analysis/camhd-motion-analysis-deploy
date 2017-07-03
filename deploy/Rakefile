@@ -4,6 +4,7 @@ require 'dotenv'
 
 
 network_name = "lazycache"
+lazycache_name = "lazycache"
 
 namespace :network do
   task :create do
@@ -28,7 +29,7 @@ namespace :lazycache do
   end
 
   task :deploy => :push do
-    sh "docker service create --name lazycache --network #{network_name} -p 8080 #{lazycache_tag}"
+    sh "docker service create --name #{lazycache_name} --network #{network_name} -p 8080 #{lazycache_tag}"
   end
 end
 
@@ -121,7 +122,7 @@ task :inject do
   " /code/camhd_motion_analysis/python/rq_client.py " \
   " --threads 16 " \
   " --log INFO " \
-  " --lazycache-url http://lazycache_nocache:8080/v1/org/oceanobservatories/rawdata/files" \
+  " --lazycache-url http://#{lazycache_name}:8080/v1/org/oceanobservatories/rawdata/files" \
   " --output-dir /output/CamHD_motion_metadata"\
   " #{inject_path}"
 end
