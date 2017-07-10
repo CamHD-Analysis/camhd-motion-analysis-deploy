@@ -56,9 +56,12 @@ end
 
 namespace :gcloud do
 
-  task :lazycache do
-    sh "docker service create --name #{lazycache_name} --constraint node.role!=manager --network #{network_name} -p 8080 #{lazycache_tag}"
+
+
+  task :redis do
+    sh "docker run  --detach --env-file gcloud/prod.env -p 6379:6379 --name redis -v /home/amarburg/bitnami:/bitnami bitnami/redis:latest"
   end
+
 
   task :worker do
     sh "docker service create --env-file prod.env --name worker "\
@@ -113,6 +116,10 @@ end
 
 
 namespace :desktop do
+
+  task :lazycache do
+    sh "docker service create --name lazycache --network #{network_name} -p 8080 #{lazycache_tag}"
+  end
 
   namespace :worker do
     task :deploy do

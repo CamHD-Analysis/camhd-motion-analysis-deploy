@@ -29,9 +29,6 @@ RUN touch /usr/include/ceres/internal/config.h
 ## Resolve a bug in the current xenial (and yakkety?) package for curlpp
 RUN sed -i s/std::string\(\\\([a-zA-Z\ \\\"]*\\\)\)/\\\1/ /usr/include/curlpp/Option.inl
 
-# Cache buster
-RUN ls
-
 ## Install pycamhd
 WORKDIR /code
 RUN git clone https://github.com/CamHD-Analysis/pycamhd-lazycache.git
