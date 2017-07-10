@@ -59,7 +59,7 @@ namespace :gcloud do
   task :lazycache do
       sh "docker service create --name #{lazycache_name} "\
           "--constraint node.role!=manager "\
-          "--network #{network_name} -p 8080 #{lazycache_tag}"
+          "--network #{network_name} -p 8080 #{lazycache_image_gcr}"
   end
 
   task :redis do
