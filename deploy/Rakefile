@@ -10,10 +10,10 @@ lazycache_image_gcr = "us.gcr.io/camhd-motion-analysis-swarm/lazycache_prod:late
 lazycache_repo = "#{ENV['GOPATH']}/src/github.com/amarburg/go-lazycache/deploy/docker/"
 
 worker_image_dockerhub = "amarburg/camhd_motion_analysis_rq_worker:latest"
-worker_image_gcr = "us.gcr.io/camhd-motion-analysis-swarm/lazycache_prod:latest"
+worker_image_gcr = "us.gcr.io/camhd-motion-analysis-swarm/camhd_motion_analysis_rq_worker:latest"
 
-instance_version = "rev1"
 instance_name   = "swarm-coreos-alpha-n1-highcpu-8"
+instance_version = "rev4"
 instance_fullname = [instance_name, instance_version].join('-')
 
 
@@ -107,6 +107,10 @@ namespace :gcloud do
             --image-project coreos-cloud \
             --boot-disk-size 10GB \
             --metadata-from-file user-data=gcloud/swarm-worker-cloud-init"
+      end
+
+      task :describe do
+        sh "gcloud --project=camhd-motion-analysis-swarm compute instance-templates describe #{instance_fullname}"
       end
 
       task :start do
