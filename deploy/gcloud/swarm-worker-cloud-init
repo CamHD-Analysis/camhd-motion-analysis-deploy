@@ -21,7 +21,8 @@ coreos:
 
         [Service]
         Type=OneShot
-        ExecStartPre=/usr/bin/bash -c "/usr/bin/systemctl set-environment DOCKER_SWARM_TOKEN=$(curl \"http://metadata.google.internal/computeMetadata/v1/project/attributes/docker_swarm_token\" -H \"Metadata-Flavor: Google\")"
+        ExecStart=/usr/bin/bash -c "/usr/bin/systemctl set-environment DOCKER_SWARM_TOKEN=$(curl \"http://metadata.google.internal/computeMetadata/v1/project/attributes/docker_swarm_token\" -H \"Metadata-Flavor: Google\")"
+        ExecStart=/usr/bin/docker swarm leave --force
         ExecStart=/usr/bin/docker swarm join --token ${DOCKER_SWARM_TOKEN} swarm-manager:2377
 
         [Unit]
