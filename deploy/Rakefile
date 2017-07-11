@@ -125,6 +125,34 @@ namespace :gcloud do
 
   end
 
+  task :refresh => [:stop_cluster,
+                    "gcloud:instance_group:start",
+                    "gcloud:lazycache",
+                    "gcloud:refresh:scale_lazycache_and_wait",
+                    "gcloud:worker",
+                    "gcloud:efresh:scale_worker"]
+
+
+  task :stop_cluster do
+    sh "docker service rm lazycache"
+    sh "docker service rm worker"
+
+    sh "gcloud --project=camhd-motion-analysis-swarm compute instance-groups managed delete worker-alpha-swarm"
+  end
+
+  # "Hidden" tasks to support cluster refresh
+  namespace :refresh do
+
+    task :scale_lazycache_and_wait do
+      sh "docker service scale lazycache=8"
+      sh "sleep 120"   # TODO make this a closed loop on swarm status
+    end
+
+    task :scale_worker_and_wait do
+      sh "docker service scale worker=16"
+    end
+
+  end
 
 end
 
