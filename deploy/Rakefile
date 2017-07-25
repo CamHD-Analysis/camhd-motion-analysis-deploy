@@ -132,7 +132,7 @@ namespace :gcloud do
                     "gcloud:lazycache",
                     "gcloud:refresh:scale_lazycache_and_wait",
                     "gcloud:worker",
-                    "gcloud:efresh:scale_worker"]
+                    "gcloud:refresh:scale_worker_and_wait"]
 
 
   task :stop_cluster do
