@@ -162,16 +162,14 @@ end
 namespace :desktop do
 
   task :lazycache do
-    sh "docker service create --name lazycache --network #{network_name} -p 8080 #{lazycache_tag}"
+    sh "docker service create --name lazycache --network #{network_name} -p 8080 #{lazycache_image_dockerhub}"
   end
 
-  namespace :worker do
-    task :deploy do
-      sh "docker service create --env-file prod.env --name worker "\
-      "--network #{network_name} "\
-      "--mount type=volume,volume-opt=o=addr=192.168.13.110,volume-opt=device=:/mnt/zvol1/users/aaron/camhd_analysis/CamHD_motion_metadata/,volume-opt=type=nfs,source=camhd_motion_metadata_by_nfs,target=/output/CamHD_motion_metadata,volume-nocopy " \
-      "#{worker_image_dockerhub} --log INFO"
-    end
+  task :worker do
+    sh "docker service create --env-file prod.env --name worker "\
+    "--network #{network_name} "\
+    "--mount type=volume,volume-opt=o=addr=192.168.13.110,volume-opt=device=:/mnt/zvol1/users/aaron/camhd_analysis/CamHD_motion_metadata/,volume-opt=type=nfs,source=camhd_motion_metadata_by_nfs,target=/output/CamHD_motion_metadata,volume-nocopy " \
+    "#{worker_image_dockerhub} --log INFO"
   end
 
 end
