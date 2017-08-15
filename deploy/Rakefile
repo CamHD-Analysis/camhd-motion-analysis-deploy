@@ -177,18 +177,41 @@ end
 
 inject_path = ENV["INJECT_PATH"] || " /RS03ASHS/PN03B/06-CAMHDA301/2016/03/01/"
 
-desc "Inject new jobs into the RQ queue, use the env variable INJECT_PATH"
-task :inject do
+def do_inject(inject_path,
+              network,
+              image,
+              lazycache)
   Dotenv.load('prod.env')
   sh "docker run --rm --env-file prod.env "\
       " --entrypoint python3 "\
-      " --network #{network_name}" \
+      " --network #{network}" \
       " --volume camhd_motion_metadata_by_nfs:/output/CamHD_motion_metadata" \
-      " #{worker_image_dockerhub}"\
+      " #{image}"\
       " /code/camhd_motion_analysis/python/rq_client.py " \
       " --threads 16 " \
       " --log INFO " \
-      " --lazycache-url http://#{lazycache_name}:8080/v1/org/oceanobservatories/rawdata/files" \
+      " --lazycache-url http://#{lazycache}:8080/v1/org/oceanobservatories/rawdata/files" \
       " --output-dir /output/CamHD_motion_metadata"\
       " #{inject_path}"
+end
+
+desc "Inject new jobs into the RQ queue, use the env variable INJECT_PATH"
+task :inject do
+  do_inject(inject_path, network_name, worker_image_dockerhub, lazycache_name)
+end
+
+inject_window = ENV["INJECT_WINDOW"].to_i || 1
+
+desc "Inject recent jobs"
+task :inject_recent do
+
+  (Date.today-inject_window).upto( Date.today ) { |date|
+
+    path = "/RS03ASHS/PN03B/06-CAMHDA301/%04d/%02d/%02d/" % [date.year, date.month, date.mday]
+    puts path
+
+    do_inject(path, network_name, worker_image_dockerhub, lazycache_name)
+
+  }
+
 end
