@@ -1,6 +1,7 @@
 
 require 'bundler'
 require 'dotenv'
+require 'date'
 
 lazycache_name = "lazycache"
 network_name = lazycache_name
