@@ -58,7 +58,11 @@ namespace :lazycache do
     sh *%W{ gcloud docker -- push #{lazycache_image_gcr} }
   end
 
-  task :deploy => :push do
+  task :pull do
+    docker "pull", lazycache_iamge_dockerhub
+  end
+
+  task :deploy => :pull do
     docker "service", "create", "--name", lazycache_name, \
             "--network", network_name, "-p", "8080", \
             lazycache_image_dockerhub
@@ -183,26 +187,26 @@ namespace :deploy do
     task :lazycache do
       sh "gcloud docker --authorize-only"
       sh "docker service create --with-registry-auth "\
-      " --name #{lazycache_name} "\
-      "--constraint node.role!=manager "\
-      "--network #{network_name} -p 8080 #{lazycache_image_gcr}"
+            " --name #{lazycache_name} "\
+            "--constraint node.role!=manager "\
+            "--network #{network_name} -p 8080 #{lazycache_image_gcr}"
       sh "docker service scale lazycache=8"
     end
 
     task :redis do
       sh "docker run  --detach --env-file gcloud/prod.env -p 6379:6379 "\
-      "--restart always "\
-      "--name redis -v /home/amarburg/bitnami:/bitnami bitnami/redis:latest"
+            "--restart always "\
+            "--name redis -v /home/amarburg/bitnami:/bitnami bitnami/redis:latest"
     end
 
 
     task :worker do
       sh "gcloud docker --authorize-only"
       sh "docker service create  --with-registry-auth "\
-      "--env-file gcloud/prod.env --name worker "\
-      "--constraint node.role!=manager --network #{network_name} "\
-      "--mount type=volume,volume-opt=o=addr=swarm-manager,volume-opt=device=:/home/amarburg/CamHD_motion_metadata,volume-opt=type=nfs,source=camhd_motion_metadata_by_nfs,target=/output/CamHD_motion_metadata,volume-nocopy " \
-      "#{worker_image_gcr} --log INFO"
+            "--env-file gcloud/prod.env --name worker "\
+            "--constraint node.role!=manager --network #{network_name} "\
+            "--mount type=volume,volume-opt=o=addr=swarm-manager,volume-opt=device=:/home/amarburg/CamHD_motion_metadata,volume-opt=type=nfs,source=camhd_motion_metadata_by_nfs,target=/output/CamHD_motion_metadata,volume-nocopy " \
+            "#{worker_image_gcr} --log INFO"
       sh "docker service scale worker=16"
     end
 
