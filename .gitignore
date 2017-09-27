@@ -1,1 +1,3 @@
 Gemfile.lock
+desktop_cluster/*.env
+.AppleDouble/

@@ -19,5 +19,5 @@ RUN ldconfig   ## Weird that I need to run this...
 
 VOLUME /output/CamHD_motion_metadata
 
-ADD docker/launch_worker.sh  /code
+ADD $DOCKER_PATH/launch_worker.sh  /code
 ENTRYPOINT ["/code/launch_worker.sh"]
