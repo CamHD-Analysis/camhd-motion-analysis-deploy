@@ -8,10 +8,13 @@ network_name = lazycache_name
 
 lazycache_image_dockerhub = "amarburg/lazycache_prod:latest"
 lazycache_image_gcr = "us.gcr.io/camhd-motion-analysis-swarm/lazycache_prod:latest"
-lazycache_repo = "#{ENV['GOPATH']}/src/github.com/amarburg/go-lazycache/deploy/docker/"
+lazycache_github = "github.com/amarburg/go-lazycache"
+# = "#{ENV['GOPATH']}/src/github.com/amarburg/go-lazycache/deploy/docker/"
 
 worker_image_dockerhub = "amarburg/camhd_motion_analysis_rq_worker:latest"
 worker_image_gcr = "us.gcr.io/camhd-motion-analysis-swarm/camhd_motion_analysis_rq_worker:latest"
+
+worker_image_test = "camhd_motion_analysis_rq_worker:test"
 
 instance_name   = "swarm-coreos-alpha-n1-highcpu-8"
 instance_version = "rev4"
@@ -23,30 +26,42 @@ def in_worker_docker( &blk )
 end
 
 
+def docker( *args );         sh "docker", *args; end
+
+def docker_build( *args );   docker("build", *args); end
+def docker_run( *args );     docker("run", *args);   end
+
+
+
+## No default
 task :default
 
 namespace :network do
   task :create do
-    sh "docker network create --attachable --driver=overlay #{network_name}"
+    docker *%W{ network create --attachable --driver=overlay #{network_name} }
   end
 end
 
 namespace :lazycache do
 
+  desc "Builds a pristine Lazycache image, pulling go-lazycache from Github"
   task :build do
-    chdir( lazycache_repo ) do
-      sh "docker build --no-cache  --tag #{lazycache_image_dockerhub}  --file #{lazycache_repo}/Dockerfile ."
-    end
+    docker_build "--no-cache", \
+                  "--tag", lazycache_image_dockerhub, \
+                  "--file", "deploy/docker/Dockerfile",
+                  lazycache_github
   end
 
   task :push do
-    sh "docker push #{lazycache_image_dockerhub}"
-    sh "docker tag #{lazycache_image_dockerhub} #{lazycache_image_gcr}"
-    sh "gcloud docker -- push #{lazycache_image_gcr}"
+    docker "push", lazycache_image_dockerhub
+    docker "tag", lazycache_image_dockerhub, lazycache_image_gcr
+    sh *%W{ gcloud docker -- push #{lazycache_image_gcr} }
   end
 
   task :deploy => :push do
-    sh "docker service create --name #{lazycache_name} --network #{network_name} -p 8080 #{lazycache_image_dockerhub}"
+    docker "service", "create", "--name", lazycache_name, \
+            "--network", network_name, "-p", "8080", \
+            lazycache_image_dockerhub
   end
 end
 
@@ -56,39 +71,26 @@ namespace :worker do
   # Builds the "production" worker image directly from Git
   task :build => "worker:base_image" do
     in_worker_docker do
-    sh "docker build --no-cache "\
-    " --tag camhd_motion_analysis_rq_worker:latest " \
-    " --tag camhd_motion_analysis_rq_worker:#{`git rev-parse --short HEAD`.chomp} "\
-    " --tag amarburg/camhd_motion_analysis_rq_worker:latest" \
-    " --file Dockerfile_rq_prod ."
+      docker_build "--no-cache",
+                    "--tag", worker_image_dockerhub,
+                    "--tag", worker_image_gcr,
+                    "--file", "Dockerfile_rq_prod",
+                    "."
     end
   end
 
   task :run do
-    Dotenv.load('desktop_cluster/prod.env')
-    sh "docker run --rm --env-file deploy/desktop_cluster/prod.env "\
-    " --network lazycache" \
-    " --volume camhd_motion_metadata_by_nfs:/output/CamHD_motion_metadata "\
-    " amarburg/camhd_motion_analysis_rq_worker:latest --log INFO"
-  end
-
-  task :test_inject do
-    Dotenv.load('desktop_cluster/test.env')
-    sh "docker run --rm --env-file test.env "\
-    " --entrypoint python3 "\
-    " --network lazycache" \
-    " --volume camhd_motion_metadata_by_nfs:/output/CamHD_motion_metadata" \
-    " amarburg/camhd_motion_analysis_rq_worker:latest"\
-    " /code/camhd_motion_analysis/python/rq_client.py " \
-    " --threads 16 " \
-    " --lazycache-url http://lazycache_nocache:8080/v1/org/oceanobservatories/rawdata/files" \
-    " --output-dir /output/CamHD_motion_metadata"\
-    " /RS03ASHS/PN03B/06-CAMHDA301/2016/02/01/"
+    env_file = 'conf/prod.env'
+    Dotenv.load(env_file)
+    docker_run *%W{--rm
+                   --env-file #{env_file}
+                   --network lazycache
+                   --volume camhd_motion_metadata_by_nfs:/output/CamHD_motion_metadata
+                   #{worker_image_dockerhub} --log INFO }
   end
 
   task :push do
-    sh "docker push #{worker_image_dockerhub}"
-    sh "docker tag #{worker_image_dockerhub} #{worker_image_gcr}"
+    docker "push", worker_image_dockerhub
     sh "gcloud docker -- push #{worker_image_gcr}"
   end
 
@@ -103,13 +105,13 @@ namespace :worker do
 
     task :build do
       in_worker_docker do
-        sh "docker", "build", *args
+        docker_build *args
       end
     end
 
     task :force do
       in_worker_docker do
-        sh "docker", "build", "--no-cache", *args
+        docker_build "--no-cache", *args
       end
     end
   end
@@ -126,24 +128,24 @@ namespace :worker do
 
         Dotenv.load('test.env')
         #sh "git submodule update --init --recursive camhd_motion_analysis"
-        sh "docker build --build-arg CAMHD_PATH=#{camhd_path} --build-arg DOCKER_PATH=#{docker_path}"\
-        "--tag camhd_motion_analysis_rq_worker:test " \
-        "--file #{docker_path} "
+        docker_build *%W{ --build-arg CAMHD_PATH=#{camhd_path} --build-arg DOCKER_PATH=#{docker_path}
+                        --tag #{worker_image_test}
+                        --file #{docker_path} }
       }
     end
 
     task :run do
-      sh "docker run --rm "\
-      "--env-file test.env " \
-      "--volume /home/aaron/canine/camhd_analysis/CamHD_motion_metadata:/output/CamHD_motion_metadata"\
-      " camhd_motion_analysis_rq_worker:test  --log INFO"
+      docker_run  *%W{run --rm
+                  --env-file test.env
+                  --volume /home/aaron/canine/camhd_analysis/CamHD_motion_metadata:/output/CamHD_motion_metadata
+                  #{worker_image_test}  --log INFO }
     end
 
 
     desc "Run the test image using the production configuration"
     task :run_prod_env do
-      Dotenv.load('desktop_cluster/prod.env')
-      sh "docker run --rm --env-file desktop_cluster/prod.env "\
+      Dotenv.load('conf/prod.env')
+      sh "docker run --rm --env-file conf/prod.env "\
       " --network lazycache" \
       " --volume camhd_motion_metadata_by_nfs:/output/CamHD_motion_metadata "\
       " camhd_motion_analysis_rq_worker:test --log INFO"
@@ -153,8 +155,8 @@ namespace :worker do
     task :inject do
       #" --lazycache-url http://lazycache_nocache:8080/v1/org/oceanobservatories/rawdata/files" \
 
-      Dotenv.load('desktop_cluster/test.env')
-      sh "docker run --rm --env-file desktop_cluster/test.env "\
+      Dotenv.load('conf/test.env')
+      sh "docker run --rm --env-file conf/test.env "\
       " --entrypoint python3 "\
       " --network lazycache" \
       " --volume camhd_motion_metadata_by_nfs:/output/CamHD_motion_metadata" \
@@ -304,25 +306,22 @@ namespace :deploy do
 
   inject_path = ENV["INJECT_PATH"] || " /RS03ASHS/PN03B/06-CAMHDA301/2016/03/01/"
 
-  def do_inject(inject_path,
-    network,
-    image,
-    lazycache)
-    Dotenv.load('prod.env')
+  def do_inject(inject_path, network, image, lazycache)
+    Dotenv.load('conf/prod.env')
 
     ## Use the public version
     #" --lazycache-url http://#{lazycache}:8080/v1/org/oceanobservatories/rawdata/files" \
 
-    sh "docker run --rm --env-file prod.env "\
-    " --entrypoint python3 "\
-    " --network #{network}" \
-    " --volume camhd_motion_metadata_by_nfs:/output/CamHD_motion_metadata" \
-    " #{image}"\
-    " /code/camhd_motion_analysis/python/rq_client.py " \
-    " --threads 16 " \
-    " --log INFO " \
-    " --output-dir /output/CamHD_motion_metadata"\
-    " #{inject_path}"
+    docker_run *%W{--rm --env-file conf/prod.env
+                 --entrypoint python3
+                 --network #{network}
+                 --volume camhd_motion_metadata_by_nfs:/output/CamHD_motion_metadata
+                 #{image}
+                 /code/camhd_motion_analysis/python/rq_client.py
+                 --threads 16
+                 --log INFO
+                 --output-dir /output/CamHD_motion_metadata
+                 #{inject_path} }
   end
 
   desc "Inject new jobs into the RQ queue; use the env variable INJECT_PATH"
