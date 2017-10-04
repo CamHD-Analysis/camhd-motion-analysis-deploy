@@ -288,6 +288,31 @@ namespace :deploy do
 
       end
 
+
+      ## Gcloud-image inject jobs
+      desc "Inject new jobs into the RQ queue; use the env variable INJECT_PATH"
+      task :inject do
+        do_inject(inject_path, network_name, worker_image_gcr, lazycache_name)
+      end
+
+      inject_window = ENV["INJECT_WINDOW"].to_i || 1
+
+      desc "Inject recent jobs; set INJECT_WINDOW"
+      task :inject_recent do
+
+        (Date.today-inject_window).upto( Date.today ) { |date|
+
+          path = "/RS03ASHS/PN03B/06-CAMHDA301/%04d/%02d/%02d/" % [date.year, date.month, date.mday]
+          puts path
+
+          do_inject(path, network_name, worker_image_gcr, lazycache_name)
+
+        }
+
+      end
+
+
+
     end
 
 
