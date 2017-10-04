@@ -183,8 +183,6 @@ end
 
 
 
-namespace :deploy do
-
   ## Tasks specific to running on gcloud
   namespace :gcloud do
 
@@ -334,8 +332,6 @@ namespace :deploy do
 
     end
 
-
-  end
 
   inject_path = ENV["INJECT_PATH"] || " /RS03ASHS/PN03B/06-CAMHDA301/2016/03/01/"
 
