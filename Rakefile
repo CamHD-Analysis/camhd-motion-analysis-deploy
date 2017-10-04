@@ -350,7 +350,6 @@ end
                  /code/camhd_motion_analysis/python/rq_job_injector.py
                  --threads 16
                  --log INFO
-                --dry-run
                  --output-dir /output/CamHD_motion_metadata
                  --client-lazycache-url #{PUBLIC_LAZYCACHE_URL}
                  --lazycache-url #{LOCAL_LAZYCACHE_URL}
