@@ -3,6 +3,10 @@ require 'bundler'
 require 'dotenv'
 require 'fileutils'
 
+
+PUBLIC_LAZYCACHE_URL = "https://camhd-cache.appspot.com/v1/org/oceanobservatories/rawdata/files/"
+LOCAL_LAZYCACHE_URL  = "http://#lazycache:8080/v1/org/oceanobservatories/rawdata/files"
+
 lazycache_name = "lazycache"
 network_name = lazycache_name
 
@@ -165,7 +169,7 @@ namespace :worker do
       " --network lazycache" \
       " --volume camhd_motion_metadata_by_nfs:/output/CamHD_motion_metadata" \
       " camhd_motion_analysis_rq_worker:test"\
-      " /code/camhd_motion_analysis/python/rq_client.py " \
+      " /code/camhd_motion_analysis/python/rq_job_injector.py " \
       " --log INFO" \
       " --threads 16 " \
       " --output-dir /output/CamHD_motion_metadata"\
@@ -321,10 +325,13 @@ namespace :deploy do
                  --network #{network}
                  --volume camhd_motion_metadata_by_nfs:/output/CamHD_motion_metadata
                  #{image}
-                 /code/camhd_motion_analysis/python/rq_client.py
+                 /code/camhd_motion_analysis/python/rq_job_injector.py
                  --threads 16
                  --log INFO
+                --dry-run
                  --output-dir /output/CamHD_motion_metadata
+                 --client-lazycache-url #{PUBLIC_LAZYCACHE_URL}
+                 --lazycache-url #{LOCAL_LAZYCACHE_URL}
                  #{inject_path} }
   end
 
