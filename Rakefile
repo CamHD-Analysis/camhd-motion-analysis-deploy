@@ -2,6 +2,7 @@
 require 'bundler'
 require 'dotenv'
 require 'fileutils'
+require 'date'
 
 lazycache_name = "lazycache"
 network_name = lazycache_name
@@ -190,7 +191,7 @@ namespace :deploy do
     end
 
     task :redis do
-      sh "docker run  --detach --env-file gcloud/prod.env -p 6379:6379 "\
+      sh "docker run  --detach --env-file conf/prod.env -p 6379:6379 "\
       "--restart always "\
       "--name redis -v /home/amarburg/bitnami:/bitnami bitnami/redis:latest"
     end
