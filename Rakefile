@@ -6,7 +6,7 @@ require 'date'
 
 
 PUBLIC_LAZYCACHE_URL = "https://camhd-cache.appspot.com/v1/org/oceanobservatories/rawdata/files/"
-LOCAL_LAZYCACHE_URL  = "http://#lazycache:8080/v1/org/oceanobservatories/rawdata/files"
+LOCAL_LAZYCACHE_URL  = "http://lazycache:8080/v1/org/oceanobservatories/rawdata/files"
 
 lazycache_name = "lazycache"
 network_name = lazycache_name
