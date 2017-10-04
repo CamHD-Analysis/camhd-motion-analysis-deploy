@@ -4,6 +4,10 @@ require 'dotenv'
 require 'fileutils'
 require 'date'
 
+
+PUBLIC_LAZYCACHE_URL = "https://camhd-cache.appspot.com/v1/org/oceanobservatories/rawdata/files/"
+LOCAL_LAZYCACHE_URL  = "http://#lazycache:8080/v1/org/oceanobservatories/rawdata/files"
+
 lazycache_name = "lazycache"
 network_name = lazycache_name
 
@@ -59,7 +63,11 @@ namespace :lazycache do
     sh *%W{ gcloud docker -- push #{lazycache_image_gcr} }
   end
 
-  task :deploy => :push do
+  task :pull do
+    docker "pull", lazycache_iamge_dockerhub
+  end
+
+  task :deploy => :pull do
     docker "service", "create", "--name", lazycache_name, \
             "--network", network_name, "-p", "8080", \
             lazycache_image_dockerhub
@@ -162,7 +170,7 @@ namespace :worker do
       " --network lazycache" \
       " --volume camhd_motion_metadata_by_nfs:/output/CamHD_motion_metadata" \
       " camhd_motion_analysis_rq_worker:test"\
-      " /code/camhd_motion_analysis/python/rq_client.py " \
+      " /code/camhd_motion_analysis/python/rq_job_injector.py " \
       " --log INFO" \
       " --threads 16 " \
       " --output-dir /output/CamHD_motion_metadata"\
@@ -184,26 +192,26 @@ namespace :deploy do
     task :lazycache do
       sh "gcloud docker --authorize-only"
       sh "docker service create --with-registry-auth "\
-      " --name #{lazycache_name} "\
-      "--constraint node.role!=manager "\
-      "--network #{network_name} -p 8080 #{lazycache_image_gcr}"
+            " --name #{lazycache_name} "\
+            "--constraint node.role!=manager "\
+            "--network #{network_name} -p 8080 #{lazycache_image_gcr}"
       sh "docker service scale lazycache=8"
     end
 
     task :redis do
-      sh "docker run  --detach --env-file conf/prod.env -p 6379:6379 "\
-      "--restart always "\
-      "--name redis -v /home/amarburg/bitnami:/bitnami bitnami/redis:latest"
+      sh "docker run  --detach --env-file gcloud/prod.env -p 6379:6379 "\
+            "--restart always "\
+            "--name redis -v /home/amarburg/bitnami:/bitnami bitnami/redis:latest"
     end
 
 
     task :worker do
       sh "gcloud docker --authorize-only"
       sh "docker service create  --with-registry-auth "\
-      "--env-file gcloud/prod.env --name worker "\
-      "--constraint node.role!=manager --network #{network_name} "\
-      "--mount type=volume,volume-opt=o=addr=swarm-manager,volume-opt=device=:/home/amarburg/CamHD_motion_metadata,volume-opt=type=nfs,source=camhd_motion_metadata_by_nfs,target=/output/CamHD_motion_metadata,volume-nocopy " \
-      "#{worker_image_gcr} --log INFO"
+            "--env-file gcloud/prod.env --name worker "\
+            "--constraint node.role!=manager --network #{network_name} "\
+            "--mount type=volume,volume-opt=o=addr=swarm-manager,volume-opt=device=:/home/amarburg/CamHD_motion_metadata,volume-opt=type=nfs,source=camhd_motion_metadata_by_nfs,target=/output/CamHD_motion_metadata,volume-nocopy " \
+            "#{worker_image_gcr} --log INFO"
       sh "docker service scale worker=16"
     end
 
@@ -318,10 +326,13 @@ namespace :deploy do
                  --network #{network}
                  --volume camhd_motion_metadata_by_nfs:/output/CamHD_motion_metadata
                  #{image}
-                 /code/camhd_motion_analysis/python/rq_client.py
+                 /code/camhd_motion_analysis/python/rq_job_injector.py
                  --threads 16
                  --log INFO
+                --dry-run
                  --output-dir /output/CamHD_motion_metadata
+                 --client-lazycache-url #{PUBLIC_LAZYCACHE_URL}
+                 --lazycache-url #{LOCAL_LAZYCACHE_URL}
                  #{inject_path} }
   end
 
