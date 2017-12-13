@@ -1,0 +1,75 @@
+---
+- hosts: dockerhost
+
+  pre_tasks:
+    - name: 'Install python2 Debian/Ubuntu'
+      raw: apt-get -y install python-simplejson
+      ignore_errors: true
+
+  roles:
+    - { role: kamaln7.swapfile, swapfile_swappiness: 10, swapfile_vfs_cache_pressure: 50 }
+
+  tasks:
+  - name: install docker
+    apt:
+      update_cache: yes
+      name: docker.io
+
+  - name: install docker
+    apt:
+      update_cache: yes
+      name: docker-compose
+
+  - name: install htop
+    apt:
+      name: htop
+
+  - copy:
+      src: docker-compose.yml
+      dest: /root/
+      owner: root
+      group: root
+      mode: 0644
+
+  - copy:
+      src: volumes/proxy/templates/nginx.tmpl
+      dest: /root/volumes/proxy/templates/
+      owner: root
+      group: root
+      mode: 0644
+
+  - docker_service:
+      project_src: /root/
+      build: no
+      pull: yes
+
+
+
+
+  # - name: install php and libs
+  #   dnf: name={{ item }} state=installed
+  #   with_items:
+  #     - php-xml
+  #     - php
+  #     - php-zip
+  #     - php-mbstring
+  #     - php-mysqlnd
+  #     - php-gd
+  #
+  # - name: install additional tools
+  #   dnf: name=dnf state=installed
+  #
+  # - name: set selinux permissive
+  #   selinux: policy=targeted state=permissive
+  #
+  # - name: get the owncloud tar
+  #   get_url: url=https://download.owncloud.org/community/owncloud-9.0.1.tar.bz2 dest=/var/www/html
+  #
+  # - name: exract the tar
+  #   unarchive: src=/var/www/html/owncloud-9.0.1.tar.bz2 dest=/var/www/html copy=no owner=apache
+  #   notify:
+  #   - restart apache
+  #
+  # handlers:
+  #   - name: restart apache
+  #     service: name=httpd state=restarted
