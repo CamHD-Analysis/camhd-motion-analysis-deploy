@@ -1,1 +1,5 @@
 do_token.tf
+.terraform/
+terraform.tfstate*
+inventory
+playbook.retry

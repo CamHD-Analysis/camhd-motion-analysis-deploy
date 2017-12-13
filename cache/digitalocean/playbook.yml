@@ -1,11 +1,6 @@
 ---
 - hosts: dockerhost
 
-  pre_tasks:
-    - name: 'Install python2 Debian/Ubuntu'
-      raw: apt-get -y install python-simplejson
-      ignore_errors: true
-
   roles:
     - { role: kamaln7.swapfile, swapfile_swappiness: 10, swapfile_vfs_cache_pressure: 50 }
 
@@ -24,52 +19,37 @@
     apt:
       name: htop
 
+  - name:  Create user
+    user:
+      name: admin
+      comment: "Admin"
+      uid: 1000
+      group: admin
+
+  - name: Set authorized key took from file
+    authorized_key:
+      user: admin
+      state: present
+      key: "{{ lookup('file', lookup('env','HOME') + '/.ssh/id_rsa.pub') }}"
+
   - copy:
       src: docker-compose.yml
-      dest: /root/
-      owner: root
-      group: root
+      dest: /home/admin/
+      owner: admin
+      group: admin
       mode: 0644
 
   - copy:
       src: volumes/proxy/templates/nginx.tmpl
-      dest: /root/volumes/proxy/templates/
-      owner: root
-      group: root
+      dest: /home/admin/volumes/proxy/templates/
+      owner: admin
+      group: admin
       mode: 0644
 
-  - docker_service:
-      project_src: /root/
+  - name: Start docker services using docker-compose.yml
+    docker_service:
+      project_src: /home/admin/
       build: no
       pull: yes
-
-
-
-
-  # - name: install php and libs
-  #   dnf: name={{ item }} state=installed
-  #   with_items:
-  #     - php-xml
-  #     - php
-  #     - php-zip
-  #     - php-mbstring
-  #     - php-mysqlnd
-  #     - php-gd
-  #
-  # - name: install additional tools
-  #   dnf: name=dnf state=installed
-  #
-  # - name: set selinux permissive
-  #   selinux: policy=targeted state=permissive
-  #
-  # - name: get the owncloud tar
-  #   get_url: url=https://download.owncloud.org/community/owncloud-9.0.1.tar.bz2 dest=/var/www/html
-  #
-  # - name: exract the tar
-  #   unarchive: src=/var/www/html/owncloud-9.0.1.tar.bz2 dest=/var/www/html copy=no owner=apache
-  #   notify:
-  #   - restart apache
-  #
-  # handlers:
-  #   - name: restart apache
-  #     service: name=httpd state=restarted
+    become: true
+    become_user: admin
