@@ -19,6 +19,7 @@ services:
       - "./volumes/proxy/certs:/etc/nginx/certs:ro"
 
 ## Container which automatically generates an NGINX reverse proxy configuration
+## See also https://github.com/jwilder/nginx-proxy
   nginx-gen:
     restart: always
     image: jwilder/docker-gen
@@ -48,7 +49,7 @@ services:
     image: amarburg/camhd_cache:latest   # Technically speaking, this is (currently) just another version of the lazycache_prod image
     container_name: camhd-cache
     environment:
-      - VIRTUAL_HOST=cache.camhd.science
+      - VIRTUAL_HOST=*.camhd.science
       - VIRTUAL_NETWORK=nginx-proxy
       - VIRTUAL_PORT=8080
       - LETSENCRYPT_HOST=cache.camhd.science
@@ -59,7 +60,7 @@ services:
     image: amarburg/camhd_cache:latest   # Technically speaking, this is (currently) just another version of the lazycache_prod image
     container_name: camhd-cache-2
     environment:
-      - VIRTUAL_HOST=cache.camhd.science
+      - VIRTUAL_HOST=*.camhd.science
       - VIRTUAL_NETWORK=nginx-proxy
       - VIRTUAL_PORT=8080
       - LETSENCRYPT_HOST=cache.camhd.science

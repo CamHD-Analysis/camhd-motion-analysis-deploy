@@ -19,6 +19,9 @@
     apt:
       name: htop
 
+  - name: install DO droplet monitoring
+    shell: "curl -sSL https://agent.digitalocean.com/install.sh | sh"
+
   - name: install ufw
     apt:
       name: ufw
