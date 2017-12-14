@@ -3,3 +3,4 @@ do_token.tf
 terraform.tfstate*
 inventory
 playbook.retry
+secrets.env

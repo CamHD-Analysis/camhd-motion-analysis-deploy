@@ -19,12 +19,42 @@
     apt:
       name: htop
 
+  - name: install ufw
+    apt:
+      name: ufw
+
+  - name: Configure ufw defaults
+    ufw: direction={{ item.direction }} policy={{ item.policy }}
+    with_items:
+      - { direction: 'incoming', policy: 'deny' }
+      - { direction: 'outgoing', policy: 'allow' }
+    # notify:
+    #   - restart ufw
+
+  - name: Configure ufw rules
+    ufw: rule={{ item.rule }} port={{ item.port }} proto={{ item.proto }}
+    with_items:
+      - { rule: 'limit', port: '{{ ssh_port | default("22") }}', proto: 'tcp' }
+      - { rule: 'allow', port: '80', proto: 'tcp' }
+      - { rule: 'allow', port: '443', proto: 'tcp' }
+    # notify:
+    #   - restart ufw
+
+  - name: Enable ufw logging
+    ufw: logging=on
+    # notify:
+    #   - restart ufw
+
+  - name: Enable ufw
+    ufw: state=enabled
+
   - name:  Create user
     user:
       name: admin
       comment: "Admin"
       uid: 1000
       group: admin
+      groups: docker
 
   - name: Set authorized key took from file
     authorized_key:
@@ -38,6 +68,20 @@
       owner: admin
       group: admin
       mode: 0644
+
+  - copy:
+      src: secrets.env
+      dest: /home/admin/
+      owner: admin
+      group: admin
+      mode: 0600
+
+  - copy:
+      src: spiped-keyfile
+      dest: /home/admin/
+      owner: admin
+      group: admin
+      mode: 0600
 
   - copy:
       src: volumes/proxy/templates/nginx.tmpl
