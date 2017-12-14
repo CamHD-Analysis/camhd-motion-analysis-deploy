@@ -54,6 +54,17 @@ services:
       - LETSENCRYPT_HOST=cache.camhd.science
       - LETSENCRYPT_EMAIL=amarburg@apl.washington.edu
 
+  camhd-cache2:
+    restart: always
+    image: amarburg/camhd_cache:latest   # Technically speaking, this is (currently) just another version of the lazycache_prod image
+    container_name: camhd-cache-2
+    environment:
+      - VIRTUAL_HOST=cache.camhd.science
+      - VIRTUAL_NETWORK=nginx-proxy
+      - VIRTUAL_PORT=8080
+      - LETSENCRYPT_HOST=cache.camhd.science
+      - LETSENCRYPT_EMAIL=amarburg@apl.washington.edu
+
 
 ## Add Redis server
   redis:
