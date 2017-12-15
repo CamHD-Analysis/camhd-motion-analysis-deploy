@@ -8,7 +8,8 @@ services:
     image: nginx
     container_name: nginx
     depends_on:
-      - camhd-cache
+      - camhd-cache-1
+      - camhd-cache-2
     ports:
       - "80:80"
       - "443:443"
@@ -44,23 +45,23 @@ services:
     environment:
       - NGINX_DOCKER_GEN_CONTAINER=nginx-gen
 
-  camhd-cache:
+  camhd-cache-1:
     restart: always
     image: amarburg/camhd_cache:latest   # Technically speaking, this is (currently) just another version of the lazycache_prod image
-    container_name: camhd-cache
+    container_name: camhd-cache-1
     environment:
-      - VIRTUAL_HOST=*.camhd.science
+      - VIRTUAL_HOST=cache.camhd.science
       - VIRTUAL_NETWORK=nginx-proxy
       - VIRTUAL_PORT=8080
       - LETSENCRYPT_HOST=cache.camhd.science
       - LETSENCRYPT_EMAIL=amarburg@apl.washington.edu
 
-  camhd-cache2:
+  camhd-cache-2:
     restart: always
     image: amarburg/camhd_cache:latest   # Technically speaking, this is (currently) just another version of the lazycache_prod image
     container_name: camhd-cache-2
     environment:
-      - VIRTUAL_HOST=*.camhd.science
+      - VIRTUAL_HOST=cache.camhd.science
       - VIRTUAL_NETWORK=nginx-proxy
       - VIRTUAL_PORT=8080
       - LETSENCRYPT_HOST=cache.camhd.science

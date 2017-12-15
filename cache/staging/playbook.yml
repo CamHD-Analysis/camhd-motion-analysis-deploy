@@ -36,12 +36,6 @@
         mode: 0755
         owner: root
 
-    - name:
-      command: pip uninstall docker docker-py docker-compose
-
-    - name:
-      command: pip install docker-compose
-
     - name: install add'l apt packages
       apt: name={{item}} state=installed
       with_items:
@@ -132,10 +126,17 @@
         dest: /usr/local/bin/
         mode: 0755
 
-    - name: Start docker services using docker-compose.yml
-      docker_service:
-        project_src: /home/admin/
-        build: no
-        pull: yes
+    - name: Start docker services
+      command: "docker-compose up -d"
       become: true
       become_user: admin
+
+
+    # Don't want to have to install docker-py module
+    # - name: Start docker services using docker-compose.yml
+    #   docker_service:
+    #     project_src: /home/admin/
+    #     build: no
+    #     pull: yes
+    #   become: true
+    #   become_user: admin

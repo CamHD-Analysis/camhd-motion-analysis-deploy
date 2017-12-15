@@ -1,102 +1,142 @@
 ---
 - hosts: dockerhost
 
+# ansible-galaxy install andrewsomething.do-agent
+  # Defaults to 512mb
   roles:
     - { role: kamaln7.swapfile, swapfile_swappiness: 10, swapfile_vfs_cache_pressure: 50 }
+    - andrewsomething.do-agent
 
   tasks:
-  - name: install docker
-    apt:
-      update_cache: yes
-      name: docker.io
+    - name: Update apt cache
+      apt:
+        update_cache: true
 
-  - name: install docker
-    apt:
-      update_cache: yes
-      name: docker-compose
+    - name: install packages needed to install Docker from CE
+      action: apt pkg= state=installed
+      with_items:
+        - apt-transport-https
+        - ca-certificates
+        - curl
+        - software-properties-common
 
-  - name: install htop
-    apt:
-      name: htop
+    - name: Install docker SSH key
+      apt_key:
+        url: https://download.docker.com/linux/ubuntu/gpg
 
-  - name: install DO droplet monitoring
-    shell: "curl -sSL https://agent.digitalocean.com/install.sh | sh"
+    - name: Install Docker Ubuntu repo and update cache
+      apt_repository:
+        repo: deb https://download.docker.com/linux/ubuntu xenial stable
+        update_cache: yes
 
-  - name: install ufw
-    apt:
-      name: ufw
+    - name: Get Docker compose
+      get_url:
+        url: https://github.com/docker/compose/releases/download/1.17.0/docker-compose-Linux-x86_64
+        dest: /usr/local/bin/docker-compose
+        mode: 0755
+        owner: root
 
-  - name: Configure ufw defaults
-    ufw: direction={{ item.direction }} policy={{ item.policy }}
-    with_items:
-      - { direction: 'incoming', policy: 'deny' }
-      - { direction: 'outgoing', policy: 'allow' }
-    # notify:
-    #   - restart ufw
+    - name: install add'l apt packages
+      apt: name={{item}} state=installed
+      with_items:
+        - htop
+        - curl
+        - ufw
+        - docker-ce
+        - unzip
 
-  - name: Configure ufw rules
-    ufw: rule={{ item.rule }} port={{ item.port }} proto={{ item.proto }}
-    with_items:
-      - { rule: 'limit', port: '{{ ssh_port | default("22") }}', proto: 'tcp' }
-      - { rule: 'allow', port: '80', proto: 'tcp' }
-      - { rule: 'allow', port: '443', proto: 'tcp' }
-    # notify:
-    #   - restart ufw
+    - name: Configure ufw defaults
+      ufw: direction={{ item.direction }} policy={{ item.policy }}
+      with_items:
+        - { direction: 'incoming', policy: 'deny' }
+        - { direction: 'outgoing', policy: 'allow' }
+      # notify:
+      #   - restart ufw
 
-  - name: Enable ufw logging
-    ufw: logging=on
-    # notify:
-    #   - restart ufw
+    - name: Configure ufw rules
+      ufw: rule={{ item.rule }} port={{ item.port }} proto={{ item.proto }}
+      with_items:
+        - { rule: 'limit', port: '{{ ssh_port | default("22") }}', proto: 'tcp' }
+        - { rule: 'allow', port: '80', proto: 'tcp' }
+        - { rule: 'allow', port: '443', proto: 'tcp' }
+      # notify:
+      #   - restart ufw
 
-  - name: Enable ufw
-    ufw: state=enabled
+    - name: Enable ufw logging
+      ufw: logging=on
+      # notify:
+      #   - restart ufw
 
-  - name:  Create user
-    user:
-      name: admin
-      comment: "Admin"
-      uid: 1000
-      group: admin
-      groups: docker
+    - name: Enable ufw
+      ufw: state=enabled
 
-  - name: Set authorized key took from file
-    authorized_key:
-      user: admin
-      state: present
-      key: "{{ lookup('file', lookup('env','HOME') + '/.ssh/id_rsa.pub') }}"
+    - name:  Create user
+      user:
+        name: admin
+        comment: "Admin"
+        uid: 1000
+        group: admin
+        groups: docker
 
-  - copy:
-      src: docker-compose.yml
-      dest: /home/admin/
-      owner: admin
-      group: admin
-      mode: 0644
+    - name: Set authorized keys for admin user from file
+      authorized_key:
+        user: admin
+        state: present
+        key: "{{ lookup('file', lookup('env','HOME') + '/.ssh/id_rsa.pub') }}"
 
-  - copy:
-      src: secrets.env
-      dest: /home/admin/
-      owner: admin
-      group: admin
-      mode: 0600
+    - copy:
+        src: docker-compose.yml
+        dest: /home/admin/
+        owner: admin
+        group: admin
+        mode: 0644
 
-  - copy:
-      src: spiped-keyfile
-      dest: /home/admin/
-      owner: admin
-      group: admin
-      mode: 0600
+    - copy:
+        src: ../common/secrets.env
+        dest: /home/admin/
+        owner: admin
+        group: admin
+        mode: 0600
 
-  - copy:
-      src: volumes/proxy/templates/nginx.tmpl
-      dest: /home/admin/volumes/proxy/templates/
-      owner: admin
-      group: admin
-      mode: 0644
+    - copy:
+        src: ../common/spiped-keyfile
+        dest: /home/admin/
+        owner: admin
+        group: admin
+        mode: 0600
 
-  - name: Start docker services using docker-compose.yml
-    docker_service:
-      project_src: /home/admin/
-      build: no
-      pull: yes
-    become: true
-    become_user: admin
+    - copy:
+        src: ../production/volumes/proxy/templates/nginx.tmpl
+        dest: /home/admin/volumes/proxy/templates/
+        owner: admin
+        group: admin
+        mode: 0644
+
+    - name: Install consul
+      unarchive:
+        src: https://releases.hashicorp.com/consul/1.0.1/consul_1.0.1_linux_amd64.zip
+        remote_src: yes
+        dest: /usr/local/bin/
+        mode: 0755
+
+    - name: Install nomad
+      unarchive:
+        src: https://releases.hashicorp.com/nomad/0.7.0/nomad_0.7.0_linux_amd64.zip
+        remote_src: yes
+        dest: /usr/local/bin/
+        mode: 0755
+
+    - name: Start docker services
+      command: "docker-compose up -d"
+      become: true
+      become_user: admin
+
+
+    # Don't want to have to install docker-py module
+    # - name: Start docker services using docker-compose.yml
+    #   docker_service:
+    #     project_src: /home/admin/
+    #     build: no
+    #     pull: yes
+    #   become: true
+    #   become_user: admin
