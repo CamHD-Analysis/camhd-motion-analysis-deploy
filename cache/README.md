@@ -7,3 +7,4 @@ using a combination of terraform (for machine management) and Ansible (for confi
 
 [] Convert to docker swarm?
 [] Make terraform and ansible scripts better.
+[] Make --public work...
