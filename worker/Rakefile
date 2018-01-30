@@ -11,7 +11,7 @@ LOCAL_LAZYCACHE_URL  = "http://lazycache:8080/v1/org/oceanobservatories/rawdata/
 lazycache_name = "lazycache"
 network_name = lazycache_name
 
-lazycache_image_dockerhub = "amarburg/lazycache_prod:latest"
+lazycache_image_dockerhub = "amarburg/camhd_cache:latest"
 lazycache_image_gcr = "us.gcr.io/camhd-motion-analysis-swarm/lazycache_prod:latest"
 lazycache_github = "github.com/amarburg/go-lazycache"
 # = "#{ENV['GOPATH']}/src/github.com/amarburg/go-lazycache/deploy/docker/"
