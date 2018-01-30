@@ -10,10 +10,8 @@ WORKDIR /code/camhd_motion_analysis
 
 RUN git submodule init && git submodule update
 RUN ./fips set config linux-make-release
-RUN ./fips build
-
-RUN ./fips make install
+RUN ./fips build &&  ./fips make install && ./fips clean
 
 VOLUME /output/CamHD_motion_metadata
 
-ENTRYPOINT ["/code/camhd_motion_analysis/launch_worker.sh"]
+ENTRYPOINT ["/code/camhd_motion_analysis/python/launch_worker.sh"]
