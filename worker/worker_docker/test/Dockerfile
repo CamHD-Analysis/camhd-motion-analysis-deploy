@@ -2,6 +2,9 @@
 FROM camhd_motion_analysis_rq_worker_base:latest
 MAINTAINER Aaron Marburg <amarburg@apl.washington.edu>
 
+## Uses a local copy of the source code.  Expects to be in directory ./camhd-motion-analysis
+#
+#
 ADD camhd-motion-analysis /code/camhd_motion_analysis
 WORKDIR /code/camhd_motion_analysis
 
@@ -10,9 +13,7 @@ RUN ./fips set config linux-make-release
 RUN ./fips build
 
 RUN ./fips make install
-RUN ldconfig   ## Weird that I need to run this...
 
 VOLUME /output/CamHD_motion_metadata
 
-ADD launch_worker.sh  /code
-ENTRYPOINT ["/code/launch_worker.sh"]
+ENTRYPOINT ["/code/camhd-motion-analysis/launch_worker.sh"]
