@@ -128,22 +128,25 @@ namespace :worker do
 
   namespace :test do
 
-    camhd_path = Pathname.new("../camhd_motion_analysis")
+    camhd_path = Pathname.new("../camhd-motion-analysis").expand_path()
+    docker_path = Pathname.new("./worker_docker/Dockerfile_rq_test").expand_path()
 
     desc "Builds a test docker image using a local copy of camhd_motion_analysis"
     task :build => :base_image do
-      chdir camhd_path.parent {
-        docker_path = Pathname.new("worker_docker/Dockerfile_rq_test").relative_path_from( camhd_path.parent )
+      raise "Can't find #{camhd_path}" unless camhd_path.directory?
 
-        Dotenv.load('test.env')
-        #sh "git submodule update --init --recursive camhd_motion_analysis"
-        docker_build *%W{ --build-arg CAMHD_PATH=#{camhd_path} --build-arg DOCKER_PATH=#{docker_path}
-                        --tag #{worker_image_test}
-                        --file #{docker_path} }
-      }
+      chdir camhd_path.parent do
+
+        args = %W{ --no-cache --build-arg CAMHD_PATH=#{camhd_path} --build-arg DOCKER_PATH=#{docker_path}
+                    --tag #{worker_image_test}
+                    --file #{docker_path} . }
+
+        docker_build *args
+      end
     end
 
     task :run do
+      Dotenv.load('test.env')
       docker_run  *%W{run --rm
                   --env-file test.env
                   --volume /home/aaron/canine/camhd_analysis/CamHD_motion_metadata:/output/CamHD_motion_metadata
@@ -325,7 +328,7 @@ end
 
       desc "Launch the optical flow worker on the desktop cluster"
       task :worker do
-        sh "docker service create --env-file prod.env --name worker "\
+        sh "docker service create --env-file conf/prod.env --name worker "\
         "--network #{network_name} "\
         "--mount type=volume,volume-opt=o=addr=192.168.13.110,volume-opt=device=:/mnt/zvol1/users/aaron/camhd_analysis/CamHD_motion_metadata/,volume-opt=type=nfs,source=camhd_motion_metadata_by_nfs,target=/output/CamHD_motion_metadata,volume-nocopy " \
         "#{worker_image_dockerhub} --log INFO"

@@ -9,7 +9,7 @@ RUN apt-get update && apt-get install --no-install-recommends --yes libcurlpp-de
           libboost-filesystem-dev libeigen3-dev libceres-dev \
           bzip2 ca-certificates \
           libglib2.0-0 libxext6 libsm6 libxrender1 \
-          mercurial subversion wget
+          libtclap-dev mercurial subversion wget
 
 ## Use miniconda instead of system Python
 RUN echo 'export PATH=/opt/conda/bin:$PATH' > /etc/profile.d/conda.sh && \
