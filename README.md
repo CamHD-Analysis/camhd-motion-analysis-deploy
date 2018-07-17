@@ -1,2 +1,3 @@
 # camhd-motion-analysis-deploy
-Script for scalable deployment of camhd-motion-analysis
+
+The contents of this repo have been merged into [camhd-motion-analysis](https://github.com/CamHD-Analysis/camhd-motion-analysis) in the `deploy/` directory.
